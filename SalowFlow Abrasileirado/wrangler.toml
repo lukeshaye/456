@@ -1,0 +1,9 @@
+# Nome do seu serviço no Cloudflare
+name = "salonflow"
+
+# Data de compatibilidade com as funcionalidades do Workers
+compatibility_date = "2024-04-05"
+
+# Configuração para servir o seu site estático (a pasta 'dist')
+[site]
+bucket = "./dist"

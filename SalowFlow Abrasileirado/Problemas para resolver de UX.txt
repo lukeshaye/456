@@ -1,0 +1,133 @@
+Margens dos botãos do card dos clientes na Aba Clientes
+Melhorar Pop-ups para ficar mais agradável de escrever, ter margens maiores, não ficar tudo grudado e os valores pré-preenchidos sejam apenas de exemplo para que o utilizador nem tenha que apaga-los cada vez que vai insirir algo em um novo pop-up, que ele possa apenas usar para se guiar e qundo digitar algo, o número que estava lá suma
+Trocar todas as coisas para Português do Brasil, formato de horários, formato de dinheiro, formato de datas, tudo, atualmente o dinheir está em Euro, o calendário está em inglês e tudo mais.
+A sessão financeiro não está funcionando corretamente, não está aparecendo os dados inseridos, nem gráfico nem nada, também gostaria de inserir um botão para poder exportar dados como .csv, assim como tem uma botão para PDF.
+Na Aba de Profissionais está permitindo apenas adicionar profissionais mas deve permitir adicionar os horários de trabalho de cada um e o horário de almoço de cada um.
+Horários na aba de "Configurações" não está sendo salvo, também é muito complicado editar 1 por 1, deviamos facilitar com um botão para preencher todos os horários iguais eu alguma coisa assim para facilitar. Erros encontrados no Console do DevTools 
+"hook.js:608 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=e03c0c44:5247:5)
+    at AppRoutes (App.tsx:24:23)
+    at ToastProvider (ToastContext.tsx:17:33)
+    at SupabaseAuthProvider (SupabaseAuthProvider.tsx:21:40)
+    at ErrorBoundary (ErrorBoundary.tsx:17:5)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+hook.js:608 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=e03c0c44:5247:5)
+    at AppRoutes (App.tsx:24:23)
+    at ToastProvider (ToastContext.tsx:17:33)
+    at SupabaseAuthProvider (SupabaseAuthProvider.tsx:21:40)
+    at ErrorBoundary (ErrorBoundary.tsx:17:5)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+useServiceWorker.ts:48 Service Worker registrado com sucesso: ServiceWorkerRegistration
+useServiceWorker.ts:48 Service Worker registrado com sucesso: ServiceWorkerRegistration
+icons/icon-144x144.png:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+dashboard:1 Error while trying to use the following icon from the Manifest: http://localhost:5173/icons/icon-144x144.png (Download error or resource isn't a valid image)
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+financial:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+hook.js:608 Your app (or one of its dependencies) is using an outdated JSX transform. Update to the modern JSX transform for faster performance: https://react.dev/link/new-jsx-transform Error Component Stack
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at main (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Layout (Layout.tsx:39:34)
+    at Appointments (Appointments.tsx:40:20)
+    at Suspense (<anonymous>)
+    at ProtectedRoute (ProtectedRoute.tsx:17:42)
+    at RenderedRoute (react-router-dom.js?v=e03c0c44:4088:5)
+    at Routes (react-router-dom.js?v=e03c0c44:4558:5)
+    at Router (react-router-dom.js?v=e03c0c44:4501:15)
+    at BrowserRouter (react-router-dom.js?v=e03c0c44:5247:5)
+    at AppRoutes (App.tsx:24:23)
+    at ToastProvider (ToastContext.tsx:17:33)
+    at SupabaseAuthProvider (SupabaseAuthProvider.tsx:21:40)
+    at ErrorBoundary (ErrorBoundary.tsx:17:5)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/financial_entries?select=amount%2Ctype&user_id=eq.a50ca321-57a2-4ddb-86b6-33037dd050f3&entry_date=like.2025-09%25:1  Failed to load resource: the server responded with a status of 404 ()
+hook.js:608 Erro ao carregar dados financeiros: operator does not exist: date ~~ unknown
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/business_settings?on_conflict=user_id%2C+day_of_week&columns=%22day_of_week%22%2C%22start_time%22%2C%22end_time%22%2C%22user_id%22:1  Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Erro ao salvar horários: there is no unique or exclusion constraint matching the ON CONFLICT specification
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/business_settings?on_conflict=user_id%2C+day_of_week&columns=%22day_of_week%22%2C%22start_time%22%2C%22end_time%22%2C%22user_id%22:1  Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Erro ao salvar horários: there is no unique or exclusion constraint matching the ON CONFLICT specification
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/business_exceptions?columns=%22exception_date%22%2C%22description%22%2C%22start_time%22%2C%22end_time%22%2C%22user_id%22:1  Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Erro ao salvar exceção: invalid input syntax for type time: ""
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+hook.js:608 Erro ao carregar dados do dashboard: supabase is not defined
+overrideMethod @ hook.js:608
+appointments:1 The specified value "97,00" cannot be parsed, or is out of range.
+appointments:1 The specified value "97,00" cannot be parsed, or is out of range.
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/appointments?columns=%22client_id%22%2C%22service%22%2C%22price%22%2C%22professional%22%2C%22appointment_date%22%2C%22is_confirmed%22%2C%22user_id%22&select=*:1  Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Erro ao salvar agendamento: null value in column "client_name" of relation "appointments" violates not-null constraint
+overrideMethod @ hook.js:608
+tuotvaxancyrxeqljqjs.supabase.co/rest/v1/appointments?columns=%22client_id%22%2C%22service%22%2C%22price%22%2C%22professional%22%2C%22appointment_date%22%2C%22is_confirmed%22%2C%22user_id%22&select=*:1  Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Erro ao salvar agendamento: null value in column "client_name" of relation "appointments" violates not-null constraint
+overrideMethod @ hook.js:608
+@supabase_supabase-js.js?v=e03c0c44:4227  POST https://tuotvaxancyrxeqljqjs.supabase.co/rest/v1/appointments?columns=%22client_id%22%2C%22service%22%2C%22price%22%2C%22professional%22%2C%22appointment_date%22%2C%22is_confirmed%22%2C%22user_id%22&select=* 400 (Bad Request)
+(anonymous) @ @supabase_supabase-js.js?v=e03c0c44:4227
+(anonymous) @ @supabase_supabase-js.js?v=e03c0c44:4248
+fulfilled @ @supabase_supabase-js.js?v=e03c0c44:4200
+Promise.then
+step @ @supabase_supabase-js.js?v=e03c0c44:4213
+(anonymous) @ @supabase_supabase-js.js?v=e03c0c44:4215
+__awaiter6 @ @supabase_supabase-js.js?v=e03c0c44:4197
+(anonymous) @ @supabase_supabase-js.js?v=e03c0c44:4238
+then @ @supabase_supabase-js.js?v=e03c0c44:90
+Appointments.tsx:122 Erro ao salvar agendamento: null value in column "client_name" of relation "appointments" violates not-null constraint
+overrideMethod @ hook.js:608
+onSubmit @ Appointments.tsx:122
+await in onSubmit
+(anonymous) @ chunk-H2CKYY4P.js?v=e03c0c44:1506
+await in (anonymous)
+processDispatchQueue @ react-dom_client.js?v=e03c0c44:11577
+(anonymous) @ react-dom_client.js?v=e03c0c44:11988
+batchedUpdates$1 @ react-dom_client.js?v=e03c0c44:2539
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=e03c0c44:11683
+dispatchEvent @ react-dom_client.js?v=e03c0c44:14608
+dispatchDiscreteEvent @ react-dom_client.js?v=e03c0c44:14589
+"
+Também não salva exceções, a sessão de Configurações está toda bugada em relação a salvamentos e UX.
+Também não está dando para agendar agendamentos, não está salvando, o que me leva a ser problemas em arquivos relacionados com integração com o supabase. Mas pelo menos na Aba Agendamentos, as notificações Toats estão corretas e notificando quando acontece um erro de salvamento, notificando o usuário que foi ou não salvo os dados.
+Do painel de login precisamos tirar a parte de baixo de registre-se "Ainda não tem uma conta?Registe-se", o registro vai ser feito manualmente por mim e somente para pessoas que compraram de mim terão acesso ao dashboard, e também temos que implementar mais tarde as politicas de RLS no Supabase
