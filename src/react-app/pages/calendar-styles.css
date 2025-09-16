@@ -1,0 +1,30 @@
+/* Estilos personalizados para o componente React Big Calendar - Versão Final */
+
+/* --- Estilo Base do Evento --- */
+.rbc-event {
+  background: linear-gradient(to right, #ec4899, #8b5cf6) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 4px !important;
+  padding: 4px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* --- Correção Final de Largura e Espaçamento --- */
+/*
+ * Alvo: Eventos dentro das visualizações de Dia e Semana (.rbc-day-slot).
+ * Ação: Força o evento a ocupar 100% da largura da sua coluna,
+ * eliminando as margens laterais padrão da biblioteca.
+ * Isso resolve o problema do "espaço sobrando" na lateral.
+*/
+.rbc-day-slot .rbc-event {
+  left: 0 !important;
+  width: 100% !important;
+}
+
+
+/* Garante que o texto dentro do evento seja legível */
+.rbc-event-label,
+.rbc-event-content {
+  font-size: 0.75rem;
+}

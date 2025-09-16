@@ -10,6 +10,7 @@ import { Calendar as BigCalendar, momentLocalizer, View, Views } from 'react-big
 import moment from 'moment';
 import 'moment/locale/pt-br';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './calendar-styles.css'; // Importação do arquivo de estilos corrigida
 import type { AppointmentType, ClientType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';
@@ -33,7 +34,7 @@ interface AppointmentFormData {
   price: number;
   professional: string;
   appointment_date: string;
-  attended?: boolean; // Mantido para o tipo, mas não usado no form.
+  attended?: boolean;
 }
 
 const defaultFormValues: Partial<AppointmentFormData> = {
@@ -116,7 +117,7 @@ export default function Appointments() {
     
     const appointmentData = {
       ...data,
-      price: Math.round(Number(data.price) * 100), // Converte para centavos
+      price: Math.round(Number(data.price) * 100),
       client_id: Number(data.client_id),
       client_name: client.name,
       attended: data.attended ?? false,
@@ -183,7 +184,7 @@ export default function Appointments() {
     reset({
       client_id: event.resource.client_id,
       service: event.resource.service,
-      price: event.resource.price / 100, // Converte de centavos para reais
+      price: event.resource.price / 100,
       professional: event.resource.professional,
       appointment_date: moment(appointmentDate).format('YYYY-MM-DDTHH:mm'),
       attended: event.resource.attended,
@@ -269,6 +270,7 @@ export default function Appointments() {
                 dayRangeHeaderFormat: ({ start, end }) => `${moment(start).format('DD')} - ${moment(end).format('DD [de] MMMM [de] YYYY')}`,
                 agendaTimeFormat: 'HH:mm',
                 agendaTimeRangeFormat: ({ start, end }) => `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
+                eventTimeRangeFormat: ({ start, end }) => `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
               }}
               min={moment().startOf('day').add(8, 'hours').toDate()}
               max={moment().startOf('day').add(20, 'hours').toDate()}
@@ -336,7 +338,6 @@ export default function Appointments() {
                         <input type="datetime-local" {...register('appointment_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
                         {errors.appointment_date && <p className="mt-1 text-sm text-red-600">{errors.appointment_date.message}</p>}
                       </div>
-                      {/* REMOVIDO: Checkbox de confirmação não é mais necessário */}
                     </div>
                   </div>
                   <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse items-center">
