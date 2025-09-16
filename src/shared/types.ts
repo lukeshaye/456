@@ -1,6 +1,6 @@
 import z from "zod";
 
-// Esquemas de validação para clients
+// Esquemas de validação para clients (sem alterações)
 export const ClientSchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
@@ -12,7 +12,7 @@ export const ClientSchema = z.object({
 
 export const CreateClientSchema = ClientSchema.omit({ id: true, user_id: true });
 
-// Esquemas de validação para appointments
+// Esquemas de validação para appointments (ATUALIZADO)
 export const AppointmentSchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
@@ -22,14 +22,17 @@ export const AppointmentSchema = z.object({
   price: z.number().positive("Preço deve ser positivo"),
   professional: z.string().min(1, "Profissional é obrigatório"),
   appointment_date: z.string(),
-  is_confirmed: z.boolean().default(false),
+  attended: z.boolean().default(false), // NOVO: Campo para controlar a presença do cliente
 });
 
-export const CreateAppointmentSchema = AppointmentSchema.omit({ id: true, user_id: true }).extend({
-  is_confirmed: z.boolean().optional().default(false),
-});
+// O campo `is_confirmed` foi removido. Todos os agendamentos são criados como 'confirmados'.
+export const CreateAppointmentSchema = AppointmentSchema.omit({ id: true, user_id: true });
 
-// Esquemas de validação para financial entries
+// Schema para o formulário de agendamento, que não inclui o client_name (adicionado programaticamente).
+export const AppointmentFormSchema = CreateAppointmentSchema.omit({ client_name: true });
+
+
+// Esquemas de validação para financial entries (sem alterações)
 export const FinancialEntrySchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
@@ -43,7 +46,7 @@ export const FinancialEntrySchema = z.object({
 
 export const CreateFinancialEntrySchema = FinancialEntrySchema.omit({ id: true, user_id: true, is_virtual: true });
 
-// Esquemas de validação para products
+// Esquemas de validação para products (sem alterações)
 export const ProductSchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
@@ -58,7 +61,7 @@ export const CreateProductSchema = ProductSchema.omit({ id: true, user_id: true 
   quantity: z.number().int().min(0, "Quantidade deve ser positiva").optional().default(0),
 });
 
-// Esquemas de validação para professionals
+// Esquemas de validação para professionals (sem alterações)
 export const ProfessionalSchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
@@ -83,7 +86,7 @@ export type CreateProfessionalType = z.infer<typeof CreateProfessionalSchema>;
 export type ClientType = z.infer<typeof ClientSchema>;
 export type CreateClientType = z.infer<typeof CreateClientSchema>;
 
-// Tipos para dashboard
+// Tipos para dashboard (sem alterações)
 export interface DashboardKPIs {
   dailyEarnings: number;
   dailyAppointments: number;

@@ -16,7 +16,7 @@ import { formatCurrency } from '@/react-app/utils';
 interface ProductFormData {
   name: string;
   description?: string;
-  price: number; // No formulário, usamos o valor em euros (ex: 10.50)
+  price: number; // No formulário, usamos o valor em reais (ex: 10.50)
   quantity?: number;
   image_url?: string;
 }
@@ -82,7 +82,6 @@ export default function Products() {
   const onSubmit = async (formData: ProductFormData) => {
     if (!user) return;
 
-    // CORREÇÃO: Garante que 'quantity' tenha um valor padrão de 0 se não for preenchido.
     const productData = {
       ...formData,
       price: Math.round(Number(formData.price) * 100),
@@ -104,9 +103,6 @@ export default function Products() {
     }
   };
 
-  /**
-   * Lógica de exclusão refatorada com modal e atualização otimista
-   */
   const handleDeleteClick = (product: ProductType) => {
     setProductToDelete(product);
     setIsDeleteModalOpen(true);
@@ -134,13 +130,12 @@ export default function Products() {
     setProductToDelete(null);
   };
 
-  // --- Funções Auxiliares ---
   const handleEditProduct = (product: ProductType) => {
     setEditingProduct(product);
     reset({
       name: product.name,
       description: product.description || '',
-      price: product.price / 100, // **IMPORTANTE**: Converter de cêntimos para euros para o formulário
+      price: product.price / 100,
       quantity: product.quantity || 0,
       image_url: product.image_url || '',
     });
@@ -179,7 +174,6 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Barra de Busca e Alerta de Erros */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="relative w-full sm:max-w-xs">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -289,7 +283,6 @@ export default function Products() {
           )}
         </div>
 
-        {/* Modal de Criação/Edição */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -320,6 +313,7 @@ export default function Products() {
                         <input
                           type="text"
                           {...register('name')}
+                          placeholder="Ex: Shampoo Hidratante"
                           className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
                         />
                         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
@@ -332,6 +326,7 @@ export default function Products() {
                         <textarea
                           {...register('description')}
                           rows={3}
+                          placeholder="Shampoo para cabelos secos, 250ml"
                           className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
                         />
                         {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
@@ -346,6 +341,7 @@ export default function Products() {
                             type="number"
                             step="0.01"
                             {...register('price', { valueAsNumber: true })}
+                            placeholder="45,50"
                             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
                           />
                           {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
@@ -358,6 +354,7 @@ export default function Products() {
                           <input
                             type="number"
                             {...register('quantity', { valueAsNumber: true })}
+                            placeholder="20"
                             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
                           />
                           {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>}
@@ -401,7 +398,6 @@ export default function Products() {
           </div>
         )}
 
-        {/* Modal de Confirmação de Exclusão */}
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
           onClose={handleDeleteCancel}
@@ -417,4 +413,3 @@ export default function Products() {
     </Layout>
   );
 }
-

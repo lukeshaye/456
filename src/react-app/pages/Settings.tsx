@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useSupabaseAuth } from '../auth/SupabaseAuthProvider'; // 1. Usar o nosso hook de autenticação
-import { supabase } from '../supabaseClient'; // 2. Importar o cliente Supabase
+import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
+import { supabase } from '../supabaseClient';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Settings as SettingsIcon, Clock, Plus, Trash2, X, Save } from 'lucide-react';
+import { useToastHelpers } from '../contexts/ToastContext';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // --- Definição de Tipos ---
 interface BusinessHours {
@@ -37,12 +39,15 @@ const DAYS_OF_WEEK = [
  * Página para gerir as configurações do estabelecimento.
  */
 export default function Settings() {
-  const { user } = useSupabaseAuth(); // Obter utilizador
-  
+  const { user } = useSupabaseAuth();
+  const { showSuccess, showError } = useToastHelpers();
+
   // --- Estados do Componente ---
   const [exceptions, setExceptions] = useState<BusinessException[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [exceptionToDelete, setExceptionToDelete] = useState<BusinessException | null>(null);
 
   // --- Formulário para Horários de Funcionamento ---
   const {
@@ -81,9 +86,6 @@ export default function Settings() {
     }
   }, [user]);
 
-  /**
-   * 3. Lógica para buscar os horários no Supabase.
-   */
   const fetchBusinessHours = async () => {
     if (!user) return;
     try {
@@ -95,7 +97,6 @@ export default function Settings() {
       if (error) throw error;
       
       if (data) {
-        // Preenche o formulário com os dados existentes
         const hoursData = DAYS_OF_WEEK.map(day => {
           const existing = data.find(h => h.day_of_week === day.value);
           return existing || { day_of_week: day.value, start_time: '', end_time: '' };
@@ -104,12 +105,10 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Erro ao carregar horários:', (error as Error).message);
+      showError('Erro ao carregar horários', 'Não foi possível buscar as configurações de horário.');
     }
   };
 
-  /**
-   * 4. Lógica para buscar as exceções no Supabase.
-   */
   const fetchExceptions = async () => {
     if (!user) return;
     try {
@@ -123,42 +122,37 @@ export default function Settings() {
       if (data) setExceptions(data);
     } catch (error) {
       console.error('Erro ao carregar exceções:', (error as Error).message);
+      showError('Erro ao carregar exceções', 'Não foi possível buscar os feriados e exceções.');
     }
   };
 
-  /**
-   * 5. Lógica para salvar TODOS os horários de funcionamento de uma vez (Upsert).
-   */
   const onSubmitHours = async (data: { hours: BusinessHours[] }) => {
     if (!user) return;
     try {
       const hoursToUpsert = data.hours.map(h => ({
         ...h,
         user_id: user.id,
-        // Garante que 'id' não é enviado se não existir, para o upsert funcionar corretamente
-        ...(h.id ? { id: h.id } : {})
+        start_time: h.start_time || null,
+        end_time: h.end_time || null,
       }));
 
       const { error } = await supabase
         .from('business_settings')
-        .upsert(hoursToUpsert);
+        .upsert(hoursToUpsert, { onConflict: 'user_id, day_of_week' });
 
       if (error) throw error;
       
-      alert('Horários salvos com sucesso!');
-      await fetchBusinessHours(); // Recarrega para garantir consistência
+      showSuccess('Horários salvos!', 'Seus horários de funcionamento foram atualizados.');
+      await fetchBusinessHours();
     } catch (error) {
       console.error('Erro ao salvar horários:', (error as Error).message);
+      showError('Erro ao salvar', 'Não foi possível salvar os horários. Tente novamente.');
     }
   };
 
-  /**
-   * 6. Lógica para criar uma nova exceção.
-   */
   const onSubmitException = async (data: BusinessException) => {
     if (!user) return;
     try {
-      // Garante que campos vazios sejam null em vez de string vazia
       const exceptionData = {
         ...data,
         user_id: user.id,
@@ -172,29 +166,38 @@ export default function Settings() {
 
       if (error) throw error;
       
+      showSuccess('Exceção adicionada!', 'A nova exceção de horário foi salva.');
       await fetchExceptions();
       handleCloseExceptionModal();
     } catch (error) {
       console.error('Erro ao salvar exceção:', (error as Error).message);
+      showError('Erro ao salvar exceção', 'Não foi possível salvar. Verifique os dados.');
     }
   };
+  
+  const requestDeleteException = (exception: BusinessException) => {
+    setExceptionToDelete(exception);
+    setIsDeleteModalOpen(true);
+  };
 
-  /**
-   * 7. Lógica para apagar uma exceção.
-   */
-  const handleDeleteException = async (exceptionId: number) => {
-    if (!user || !window.confirm('Tem certeza que deseja excluir esta exceção?')) return;
+  const handleConfirmDeleteException = async () => {
+    if (!user || !exceptionToDelete) return;
     try {
       const { error } = await supabase
         .from('business_exceptions')
         .delete()
-        .eq('id', exceptionId)
+        .eq('id', exceptionToDelete.id!)
         .eq('user_id', user.id);
       
       if (error) throw error;
+      showSuccess('Exceção removida!', 'A exceção foi removida com sucesso.');
       await fetchExceptions();
     } catch (error) {
       console.error('Erro ao excluir exceção:', (error as Error).message);
+      showError('Erro ao remover', 'Não foi possível remover a exceção.');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setExceptionToDelete(null);
     }
   };
 
@@ -212,7 +215,6 @@ export default function Settings() {
     resetHours({ hours: hoursData });
   };
   
-  // --- Renderização ---
   if (loading) {
     return <Layout><LoadingSpinner /></Layout>;
   }
@@ -262,7 +264,7 @@ export default function Settings() {
                       }}
                       className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                     >
-                      Aplicar a todos
+                      Aplicar
                     </button>
                   </div>
                 </div>
@@ -348,7 +350,7 @@ export default function Settings() {
                         )}
                       </div>
                       <button
-                        onClick={() => handleDeleteException(exception.id!)}
+                        onClick={() => requestDeleteException(exception)}
                         className="text-red-600 hover:text-red-900"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -409,6 +411,16 @@ export default function Settings() {
             </div>
           </div>
         )}
+
+        <ConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={handleConfirmDeleteException}
+            title="Excluir Exceção"
+            message={`Tem certeza que deseja excluir a exceção "${exceptionToDelete?.description}"?`}
+            confirmText="Excluir"
+            variant="danger"
+        />
       </div>
     </Layout>
   );

@@ -4,9 +4,10 @@ import { supabase } from '../supabaseClient';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Calendar, DollarSign, TrendingUp, MessageCircle } from 'lucide-react';
-import type { AppointmentType, ServicePopularity, ProfessionalPerformance } from '../../shared/types';
+import type { AppointmentType } from '../../shared/types';
 import moment from 'moment';
-import { useAppStore } from '../../shared/store'; // 1. Importar o useAppStore
+import { useAppStore } from '../../shared/store';
+import { useToastHelpers } from '../contexts/ToastContext';
 
 // --- Definição de Tipos para os dados do Dashboard ---
 interface DashboardKPIs {
@@ -24,15 +25,13 @@ interface WeeklyEarning {
  */
 export default function Dashboard() {
   const { user } = useSupabaseAuth();
-  const { clients } = useAppStore(); // 2. Obter a lista de clientes do estado global
+  const { clients } = useAppStore();
+  const { showSuccess, showError } = useToastHelpers();
 
   // --- Estados do Componente ---
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [todayAppointments, setTodayAppointments] = useState<AppointmentType[]>([]);
   const [weeklyEarnings, setWeeklyEarnings] = useState<WeeklyEarning[]>([]);
-  // 3. As linhas abaixo foram removidas pois as variáveis não eram utilizadas
-  // const [popularServices, setPopularServices] = useState<ServicePopularity[]>([]); 
-  // const [professionalPerformance, setProfessionalPerformance] = useState<ProfessionalPerformance[]>([]);
   const [loading, setLoading] = useState(true);
 
   // --- Efeito para Carregar os Dados ---
@@ -43,33 +42,24 @@ export default function Dashboard() {
   }, [user]);
 
   /**
-   * Orquestra todas as buscas de dados para o dashboard em paralelo.
+   * Orquestra todas as buscas de dados para o dashboard.
    */
   const fetchDashboardData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [
-        kpisData,
-        appointmentsData,
-        weeklyData,
-        servicesData,
-        performanceData
-      ] = await Promise.all([
+      const [kpisData, appointmentsData, weeklyData] = await Promise.all([
         fetchKPIs(),
         fetchTodayAppointments(),
         fetchWeeklyEarnings(),
-        fetchPopularServices(),
-        fetchProfessionalPerformance()
       ]);
 
       setKpis(kpisData);
       setTodayAppointments(appointmentsData || []);
       setWeeklyEarnings(weeklyData || []);
-      // O `setPopularServices` e `setProfessionalPerformance` poderiam ser usados aqui se necessário no futuro
-      
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', (error as Error).message);
+      showError('Erro ao carregar dados', 'Não foi possível buscar os dados do dashboard.');
     } finally {
       setLoading(false);
     }
@@ -80,32 +70,44 @@ export default function Dashboard() {
   const fetchKPIs = async (): Promise<DashboardKPIs> => {
     if (!user) return { dailyEarnings: 0, dailyAppointments: 0, avgTicket: 0 };
     const today = moment().format('YYYY-MM-DD');
-    const { data: appointmentsToday, error } = await supabase
+    
+    // Calcula os ganhos com base nos agendamentos que foram marcados como 'attended'
+    const { data: attendedAppointments, error } = await supabase
       .from('appointments')
       .select('price')
       .eq('user_id', user.id)
+      .eq('attended', true)
       .gte('appointment_date', `${today}T00:00:00`)
       .lt('appointment_date', `${today}T23:59:59`);
-    
+      
     if (error) throw error;
     
-    const dailyAppointments = appointmentsToday?.length || 0;
-    const dailyEarnings = appointmentsToday?.reduce((sum, app) => sum + app.price, 0) || 0;
+    // Total de agendamentos do dia (independentemente de terem comparecido)
+    const { count: totalAppointmentsCount } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('appointment_date', `${today}T00:00:00`)
+        .lt('appointment_date', `${today}T23:59:59`);
+
+
+    const dailyAppointments = totalAppointmentsCount || 0;
+    const dailyEarnings = attendedAppointments?.reduce((sum, app) => sum + app.price, 0) || 0;
     const avgTicket = dailyAppointments > 0 ? dailyEarnings / dailyAppointments : 0;
 
     return { dailyEarnings, dailyAppointments, avgTicket };
   };
 
   const fetchTodayAppointments = async (): Promise<AppointmentType[] | null> => {
-     if (!user) return null;
-     const today = moment().format('YYYY-MM-DD');
-     const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('appointment_date', `${today}T00:00:00`)
-        .lt('appointment_date', `${today}T23:59:59`)
-        .order('appointment_date', { ascending: true });
+    if (!user) return null;
+    const today = moment().format('YYYY-MM-DD');
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lt('appointment_date', `${today}T23:59:59`)
+      .order('appointment_date', { ascending: true });
     if (error) throw error;
     return data;
   };
@@ -113,7 +115,6 @@ export default function Dashboard() {
   const fetchWeeklyEarnings = async (): Promise<WeeklyEarning[] | null> => {
     if (!user) return null;
     const sevenDaysAgo = moment().subtract(6, 'days').format('YYYY-MM-DD');
-    
     const { data, error } = await supabase
       .from('financial_entries')
       .select('entry_date, amount')
@@ -125,56 +126,76 @@ export default function Dashboard() {
 
     const earningsByDay: { [key: string]: number } = {};
     if (data) {
-        for (const entry of data) {
-            earningsByDay[entry.entry_date] = (earningsByDay[entry.entry_date] || 0) + entry.amount;
-        }
+      for (const entry of data) {
+        earningsByDay[entry.entry_date] = (earningsByDay[entry.entry_date] || 0) + entry.amount;
+      }
     }
     return Object.entries(earningsByDay).map(([date, earnings]) => ({ entry_date: date, earnings }));
   };
-  
-  const fetchPopularServices = async (): Promise<ServicePopularity[] | null> => {
-      if(!user) return null;
-      const thirtyDaysAgo = moment().subtract(30, 'days').format('YYYY-MM-DD');
+
+  // --- Lógica de Negócio ---
+
+  /**
+   * Lida com a mudança de status de presença de um agendamento.
+   * Cria ou remove a entrada financeira correspondente.
+   */
+  const handleAttendanceChange = async (appointment: AppointmentType, hasAttended: boolean) => {
+    if (!user) return;
+    
+    // 1. Atualiza o status de presença no agendamento
+    const { error: updateError } = await supabase
+      .from('appointments')
+      .update({ attended: hasAttended })
+      .eq('id', appointment.id!);
       
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('service')
+    if (updateError) {
+      showError('Erro ao atualizar presença', updateError.message);
+      return;
+    }
+
+    if (hasAttended) {
+      // 2a. Se o cliente compareceu, cria a entrada financeira
+      const { error: insertError } = await supabase
+        .from('financial_entries')
+        .insert({
+          user_id: user.id,
+          description: `Serviço: ${appointment.service} - Cliente: ${appointment.client_name}`,
+          amount: appointment.price,
+          type: 'receita',
+          entry_type: 'pontual',
+          entry_date: moment(appointment.appointment_date).format('YYYY-MM-DD'),
+          is_virtual: true, // Indica que foi gerado por um agendamento
+        });
+
+      if (insertError) {
+        showError('Erro ao criar receita', insertError.message);
+        // Desfaz a alteração de presença em caso de erro
+        await supabase.from('appointments').update({ attended: false }).eq('id', appointment.id!);
+        return;
+      }
+      showSuccess('Receita registrada!');
+
+    } else {
+      // 2b. Se o cliente não compareceu (desmarcou), remove a entrada financeira
+      // A condição `is_virtual` garante que só vamos apagar a entrada gerada por este fluxo
+      const { error: deleteError } = await supabase
+        .from('financial_entries')
+        .delete()
         .eq('user_id', user.id)
-        .gte('appointment_date', thirtyDaysAgo);
+        .eq('description', `Serviço: ${appointment.service} - Cliente: ${appointment.client_name}`)
+        .eq('is_virtual', true);
 
-      if (error) throw error;
-      
-      const serviceCounts = data?.reduce((acc, { service }) => {
-          acc[service] = (acc[service] || 0) + 1;
-          return acc;
-      }, {} as Record<string, number>) || {};
-
-      return Object.entries(serviceCounts)
-          .map(([service, count]) => ({ service, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
-  };
-
-  const fetchProfessionalPerformance = async (): Promise<ProfessionalPerformance[] | null> => {
-      if(!user) return null;
-      const thirtyDaysAgo = moment().subtract(30, 'days').format('YYYY-MM-DD');
-      
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('professional')
-        .eq('user_id', user.id)
-        .gte('appointment_date', thirtyDaysAgo);
-
-      if (error) throw error;
-      
-      const profCounts = data?.reduce((acc, { professional }) => {
-          acc[professional] = (acc[professional] || 0) + 1;
-          return acc;
-      }, {} as Record<string, number>) || {};
-
-      return Object.entries(profCounts)
-          .map(([professional, count]) => ({ professional, count }))
-          .sort((a, b) => b.count - a.count);
+      if (deleteError) {
+        showError('Erro ao remover receita', deleteError.message);
+         // Desfaz a alteração de presença em caso de erro
+        await supabase.from('appointments').update({ attended: true }).eq('id', appointment.id!);
+        return;
+      }
+      showSuccess('Receita removida.');
+    }
+    
+    // 3. Recarrega todos os dados do dashboard para refletir as mudanças
+    await fetchDashboardData();
   };
 
 
@@ -190,11 +211,10 @@ export default function Dashboard() {
     return new Date(dateString).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false // Garante o formato 24h
+      hour12: false
     });
   };
 
-  // 4. CORREÇÃO: Usar a lista de clientes para encontrar o nome
   const sendWhatsAppReminder = (appointment: AppointmentType) => {
     const client = clients.find(c => c.id === appointment.client_id);
     const clientName = client ? client.name : 'Cliente';
@@ -290,24 +310,25 @@ export default function Dashboard() {
                 todayAppointments.map((appointment) => (
                   <div key={appointment.id} className="px-6 py-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                      {/* Checkbox para marcar presença */}
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`attended-${appointment.id}`}
+                          className="h-5 w-5 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                          checked={appointment.attended}
+                          onChange={(e) => handleAttendanceChange(appointment, e.target.checked)}
+                        />
+                        <label htmlFor={`attended-${appointment.id}`} className="ml-3 flex-1">
                           <p className="text-sm font-medium text-gray-900">
-                            {/* 5. CORREÇÃO: Lógica para encontrar o nome do cliente */}
                             {formatTime(appointment.appointment_date)} - {clients.find(c => c.id === appointment.client_id)?.name || 'Cliente'}
                           </p>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            appointment.is_confirmed 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {appointment.is_confirmed ? 'Confirmado' : 'Pendente'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {appointment.service} • {appointment.professional} • {formatCurrency(appointment.price)}
-                        </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {appointment.service} • {appointment.professional} • {formatCurrency(appointment.price)}
+                          </p>
+                        </label>
                       </div>
+                      
                       <button
                         onClick={() => sendWhatsAppReminder(appointment)}
                         className="ml-4 inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
@@ -339,9 +360,9 @@ export default function Dashboard() {
                     return (
                       <div key={index} className="flex items-center">
                         <div className="w-16 text-xs text-gray-600">
-                          {new Date(day.entry_date + 'T00:00:00').toLocaleDateString('pt-BR', { 
-                            day: '2-digit', 
-                            month: '2-digit' 
+                          {new Date(day.entry_date + 'T00:00:00').toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit'
                           })}
                         </div>
                         <div className="flex-1 mx-3">

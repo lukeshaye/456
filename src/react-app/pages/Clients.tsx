@@ -19,6 +19,13 @@ interface ClientFormData {
   notes?: string;
 }
 
+const defaultFormValues: ClientFormData = {
+    name: '',
+    phone: '',
+    email: '',
+    notes: '',
+};
+
 /**
  * Página para gerir os clientes (Criar, Ler, Atualizar, Apagar).
  */
@@ -47,6 +54,7 @@ export default function Clients() {
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
     resolver: zodResolver(CreateClientSchema),
+    defaultValues: defaultFormValues
   });
 
   useEffect(() => {
@@ -99,7 +107,6 @@ export default function Clients() {
     setClientToDelete(null);
   };
   
-  // --- Funções Auxiliares (sem grandes alterações) ---
   const handleEditClient = (client: ClientType) => {
     setEditingClient(client);
     reset({
@@ -114,14 +121,13 @@ export default function Clients() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingClient(null);
-    reset();
+    reset(defaultFormValues);
   };
   
   const sendWhatsAppMessage = (client: ClientType) => {
     if (!client.phone) return;
-    const message = `Olá, ${client.name}! Tudo bem? Escrevo para confirmar nosso horário.`;
+    const message = `Olá, ${client.name}! Tudo bem?`;
     const phoneNumber = client.phone.replace(/\D/g, '');
-    // Adicionado "55" para o código do país
     const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -130,7 +136,6 @@ export default function Clients() {
     return <Layout><LoadingSpinner /></Layout>;
   }
 
-  // O JSX abaixo permanece praticamente idêntico, pois a lógica de UI não mudou.
   return (
     <Layout>
        <div className="px-4 sm:px-6 lg:px-8">
@@ -175,9 +180,9 @@ export default function Clients() {
               {clients.map((client) => (
                 <div
                   key={client.id}
-                  className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                  className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col"
                 >
-                  <div className="px-6 py-4">
+                  <div className="px-6 py-4 flex-grow">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="bg-blue-100 rounded-full p-2">
@@ -212,30 +217,35 @@ export default function Clients() {
                     </div>
                   </div>
 
-                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between space-x-2 gap-x-2">
-                    <button
-                      onClick={() => handleEditClient(client)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </button>
+                  {/* UX Melhorada: Div dos botões com layout corrigido */}
+                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    {/* Grupo de Ações Primárias (Editar/Excluir) */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleEditClient(client)}
+                        className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" />
+                        Editar
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteClick(client)}
+                        className="inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1.5" />
+                        Excluir
+                      </button>
+                    </div>
                     
-                    <button
-                      onClick={() => handleDeleteClick(client)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Excluir
-                    </button>
-                    
+                    {/* Ação Secundária (WhatsApp) */}
                     {client.phone && (
                       <button
                         onClick={() => sendWhatsAppMessage(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        title="Enviar mensagem no WhatsApp"
+                        className="inline-flex items-center justify-center p-2 border border-green-300 shadow-sm rounded-full text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                       >
-                        <MessageCircle className="w-4 h-4 mr-1" />
-                        WhatsApp
+                        <MessageCircle className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -314,7 +324,7 @@ export default function Clients() {
                           {...register('notes')}
                           rows={3}
                           className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                          placeholder="Preferências, observações..."
+                          placeholder="Preferências, observações, histórico..."
                         />
                         {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
                       </div>
@@ -343,7 +353,6 @@ export default function Clients() {
           </div>
         )}
 
-        {/* Modal de Confirmação de Exclusão */}
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
           onClose={handleDeleteCancel}

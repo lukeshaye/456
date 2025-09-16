@@ -127,11 +127,6 @@ export default function HomePage() {
             </div>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Acesso restrito - Entre em contato para obter credenciais
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Briefcase } from 'lucide-react';
 import type { ProfessionalType } from '../../shared/types';
 import { CreateProfessionalSchema } from '../../shared/types';
 
@@ -18,6 +18,14 @@ interface ProfessionalFormData {
   lunch_start_time?: string;
   lunch_end_time?: string;
 }
+
+const defaultFormValues: ProfessionalFormData = {
+    name: '',
+    work_start_time: '',
+    work_end_time: '',
+    lunch_start_time: '',
+    lunch_end_time: '',
+};
 
 export default function Professionals() {
   const { user } = useSupabaseAuth();
@@ -44,6 +52,7 @@ export default function Professionals() {
     formState: { errors, isSubmitting },
   } = useForm<ProfessionalFormData>({
     resolver: zodResolver(CreateProfessionalSchema),
+    defaultValues: defaultFormValues
   });
 
   useEffect(() => {
@@ -111,7 +120,7 @@ export default function Professionals() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProfessional(null);
-    reset();
+    reset(defaultFormValues);
   };
 
   if (loading.professionals) {
@@ -141,45 +150,55 @@ export default function Professionals() {
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead>
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Nome</th>
-                    <th scope="col" className="py-3.5 pl-3 pr-3 text-left text-sm font-semibold text-gray-900">Horário de Trabalho</th>
-                    <th scope="col" className="py-3.5 pl-3 pr-3 text-left text-sm font-semibold text-gray-900">Horário de Almoço</th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                      <span className="sr-only">Ações</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {professionals.map((professional) => (
-                    <tr key={professional.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">{professional.name}</td>
-                      <td className="whitespace-nowrap py-4 pl-3 pr-3 text-sm text-gray-900">
-                        {professional.work_start_time && professional.work_end_time 
-                          ? `${professional.work_start_time} - ${professional.work_end_time}`
-                          : 'Não definido'
-                        }
-                      </td>
-                      <td className="whitespace-nowrap py-4 pl-3 pr-3 text-sm text-gray-900">
-                        {professional.lunch_start_time && professional.lunch_end_time 
-                          ? `${professional.lunch_start_time} - ${professional.lunch_end_time}`
-                          : 'Não definido'
-                        }
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                        <button onClick={() => handleEditProfessional(professional)} className="text-indigo-600 hover:text-indigo-900 mr-4">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteClick(professional)} className="text-red-600 hover:text-red-900">
-                           <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+              {professionals.length === 0 ? (
+                 <div className="text-center py-12">
+                    <Briefcase className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum profissional</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Comece adicionando um profissional à sua equipe.
+                    </p>
+                  </div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Nome</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Horário de Trabalho</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Horário de Almoço</th>
+                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                        <span className="sr-only">Ações</span>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {professionals.map((professional) => (
+                      <tr key={professional.id}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">{professional.name}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {professional.work_start_time && professional.work_end_time 
+                            ? `${professional.work_start_time} - ${professional.work_end_time}`
+                            : 'Não definido'
+                          }
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {professional.lunch_start_time && professional.lunch_end_time 
+                            ? `${professional.lunch_start_time} - ${professional.lunch_end_time}`
+                            : 'Não definido'
+                          }
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                          <button onClick={() => handleEditProfessional(professional)} className="text-indigo-600 hover:text-indigo-900 mr-4">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(professional)} className="text-red-600 hover:text-red-900">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
@@ -203,7 +222,7 @@ export default function Professionals() {
                         <input
                           type="text"
                           {...register('name')}
-                          placeholder="Ex: Maria Silva"
+                          placeholder="Ex: Joana Santos"
                           className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
                         />
                         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
@@ -262,7 +281,6 @@ export default function Professionals() {
           </div>
         )}
 
-        {/* Modal de Confirmação de Exclusão */}
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
           onClose={handleDeleteCancel}
