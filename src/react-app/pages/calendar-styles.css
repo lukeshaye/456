@@ -6,8 +6,14 @@
   border: none !important;
   color: white !important;
   border-radius: 4px !important;
-  padding: 4px 6px !important;
   box-sizing: border-box !important;
+  /* Melhorias de Alinhamento e UX */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 2px 5px !important;
+  font-weight: 500 !important;
 }
 
 /* --- Correção da Largura do Card do Evento --- */
@@ -34,9 +40,10 @@
   margin-right: 0 !important;
 }
 
-/* Garante que o texto dentro do evento seja legível */
+/* Garante que o texto dentro do evento seja legível e quebre a linha */
 .rbc-event-label,
 .rbc-event-content {
   font-size: 0.75rem;
+  white-space: normal !important;
+  max-height: 100%;
 }
-

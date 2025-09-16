@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
@@ -10,21 +10,44 @@ import { Calendar as BigCalendar, momentLocalizer, View, Views } from 'react-big
 import moment from 'moment';
 import 'moment/locale/pt-br';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import './calendar-styles.css'; // Importação do arquivo de estilos corrigida
-import type { AppointmentType, ClientType } from '../../shared/types';
+import './calendar-styles.css';
+import type { AppointmentType, ClientType, BusinessHoursType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 
-// --- Configuração e Tipos ---
+// --- Configuração do Localizer ---
 moment.locale('pt-br');
+
+// Força a atualização da localização para garantir a tradução correta
 moment.updateLocale('pt-br', {
-  weekdays: ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'],
-  weekdaysShort: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
-  weekdaysMin: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
-  months: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
-  monthsShort: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+  months: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
+    "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ],
+  weekdays: [
+    "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
+  ],
+  weekdaysShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+  weekdaysMin: ["Do", "Se", "Te", "Qu", "Qu", "Se", "Sá"],
+  relativeTime: {
+    future: "em %s",
+    past: "há %s",
+    s: 'alguns segundos',
+    ss: '%d segundos',
+    m: "um minuto",
+    mm: "%d minutos",
+    h: "uma hora",
+    hh: "%d horas",
+    d: "um dia",
+    dd: "%d dias",
+    M: "um mês",
+    MM: "%d meses",
+    y: "um ano",
+    yy: "%d anos"
+  }
 });
+
 
 const localizer = momentLocalizer(moment);
 
@@ -61,10 +84,12 @@ export default function Appointments() {
     appointments, 
     clients, 
     professionals, 
+    businessHours,
     loading, 
     fetchAppointments, 
     fetchClients, 
     fetchProfessionals,
+    fetchBusinessHours,
     addAppointment,
     updateAppointment,
     deleteAppointment
@@ -95,7 +120,8 @@ export default function Appointments() {
           await Promise.all([
             fetchAppointments(user.id),
             fetchClients(user.id),
-            fetchProfessionals(user.id)
+            fetchProfessionals(user.id),
+            fetchBusinessHours(user.id)
           ]);
         } catch (err: any) {
           console.error('Erro ao carregar dados:', err.message);
@@ -104,7 +130,33 @@ export default function Appointments() {
       };
       fetchData();
     }
-  }, [user, fetchAppointments, fetchClients, fetchProfessionals, showError]);
+  }, [user, fetchAppointments, fetchClients, fetchProfessionals, fetchBusinessHours, showError]);
+
+  const { minTime, maxTime } = useMemo(() => {
+    if (!businessHours || businessHours.length === 0) {
+      return {
+        minTime: moment().startOf('day').add(8, 'hours').toDate(),
+        maxTime: moment().startOf('day').add(20, 'hours').toDate(),
+      };
+    }
+
+    let min = '23:59';
+    let max = '00:00';
+
+    businessHours.forEach((hour: BusinessHoursType) => {
+      if (hour.start_time && hour.start_time < min) {
+        min = hour.start_time;
+      }
+      if (hour.end_time && hour.end_time > max) {
+        max = hour.end_time;
+      }
+    });
+
+    return {
+      minTime: moment().startOf('day').add(moment.duration(min)).toDate(),
+      maxTime: moment().startOf('day').add(moment.duration(max)).toDate(),
+    };
+  }, [businessHours]);
 
   const onSubmit = async (data: AppointmentFormData) => {
     if (!user) return;
@@ -205,7 +257,7 @@ export default function Appointments() {
     };
   });
 
-  if (loading.appointments || loading.clients || loading.professionals) {
+  if (loading.appointments || loading.clients || loading.professionals || loading.businessHours) {
     return <Layout><LoadingSpinner /></Layout>;
   }
 
@@ -247,6 +299,7 @@ export default function Appointments() {
               onSelectSlot={handleSelectSlot}
               onSelectEvent={handleSelectEvent}
               selectable
+              culture='pt-br'
               messages={{
                 next: 'Próximo',
                 previous: 'Anterior',
@@ -263,17 +316,17 @@ export default function Appointments() {
               }}
               formats={{
                 timeGutterFormat: 'HH:mm',
-                dayFormat: (d) => moment(d).format('ddd, DD/MM'),
-                weekdayFormat: (d) => moment(d).format('ddd'),
-                monthHeaderFormat: (d) => moment(d).format('MMMM [de] YYYY'),
-                dayHeaderFormat: (d) => moment(d).format('dddd, D [de] MMMM'),
-                dayRangeHeaderFormat: ({ start, end }) => `${moment(start).format('DD')} - ${moment(end).format('DD [de] MMMM [de] YYYY')}`,
+                dayFormat: 'ddd, DD/MM',
+                weekdayFormat: 'dddd',
+                monthHeaderFormat: 'MMMM [de] YYYY',
+                dayHeaderFormat: 'dddd, D [de] MMMM',
+                dayRangeHeaderFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('DD')} - ${moment(end).format('DD [de] MMMM [de] YYYY')}`,
                 agendaTimeFormat: 'HH:mm',
-                agendaTimeRangeFormat: ({ start, end }) => `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
-                eventTimeRangeFormat: ({ start, end }) => `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
+                agendaTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
+                eventTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
               }}
-              min={moment().startOf('day').add(8, 'hours').toDate()}
-              max={moment().startOf('day').add(20, 'hours').toDate()}
+              min={minTime}
+              max={maxTime}
             />
           </div>
         </div>

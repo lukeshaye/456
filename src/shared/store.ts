@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { supabase } from '../react-app/supabaseClient';
 import type { ClientType, ProductType, AppointmentType, FinancialEntryType, ProfessionalType } from './types';
 
+// Definição da interface para os horários de funcionamento
+interface BusinessHours {
+  day_of_week: number;
+  start_time: string | null;
+  end_time: string | null;
+}
+
 // Definir a forma do nosso estado global
 interface AppState {
   // Estado para Clientes
@@ -39,6 +46,10 @@ interface AppState {
   updateFinancialEntry: (entry: FinancialEntryType) => Promise<void>;
   deleteFinancialEntry: (entryId: number) => Promise<void>;
 
+  // NOVO: Estado para Configurações de Horário
+  businessHours: BusinessHours[];
+  fetchBusinessHours: (userId: string) => Promise<void>;
+
   // Estados de loading
   loading: {
     clients: boolean;
@@ -46,6 +57,7 @@ interface AppState {
     professionals: boolean;
     appointments: boolean;
     financialEntries: boolean;
+    settings: boolean; // Adicionado
   };
   setLoading: (key: keyof AppState['loading'], value: boolean) => void;
 }
@@ -62,6 +74,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('name', { ascending: true });
     if (error) {
       console.error("Erro ao buscar clientes:", error);
+      set(state => ({ loading: { ...state.loading, clients: false } }));
       return;
     }
     set({ clients: data || [], loading: { ...get().loading, clients: false } });
@@ -108,6 +121,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('name', { ascending: true });
     if (error) {
       console.error("Erro ao buscar produtos:", error);
+      set(state => ({ loading: { ...state.loading, products: false } }));
       return;
     }
     set({ products: data || [], loading: { ...get().loading, products: false } });
@@ -154,6 +168,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('name', { ascending: true });
     if (error) {
       console.error("Erro ao buscar profissionais:", error);
+      set(state => ({ loading: { ...state.loading, professionals: false } }));
       return;
     }
     set({ professionals: data || [], loading: { ...get().loading, professionals: false } });
@@ -200,6 +215,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('appointment_date', { ascending: true });
     if (error) {
       console.error("Erro ao buscar agendamentos:", error);
+      set(state => ({ loading: { ...state.loading, appointments: false } }));
       return;
     }
     set({ appointments: data || [], loading: { ...get().loading, appointments: false } });
@@ -246,6 +262,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('entry_date', { ascending: false });
     if (error) {
       console.error("Erro ao buscar entradas financeiras:", error);
+      set(state => ({ loading: { ...state.loading, financialEntries: false } }));
       return;
     }
     set({ financialEntries: data || [], loading: { ...get().loading, financialEntries: false } });
@@ -281,13 +298,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  // Estados de loading
+  // --- CONFIGURAÇÕES DE HORÁRIO ---
+  businessHours: [],
+  fetchBusinessHours: async (userId) => {
+    set(state => ({ loading: { ...state.loading, settings: true } }));
+    const { data, error } = await supabase
+      .from('business_settings')
+      .select('day_of_week, start_time, end_time')
+      .eq('user_id', userId)
+      .not('start_time', 'is', null)
+      .not('end_time', 'is', null);
+      
+    if (error) {
+      console.error("Erro ao buscar horários de funcionamento:", error);
+      set(state => ({ loading: { ...state.loading, settings: false } }));
+      return;
+    }
+    set({ businessHours: data || [], loading: { ...get().loading, settings: false } });
+  },
+
+  // --- ESTADOS DE LOADING ---
   loading: {
     clients: false,
     products: false,
     professionals: false,
     appointments: false,
     financialEntries: false,
+    settings: false,
   },
   setLoading: (key, value) => set((state) => ({
     loading: { ...state.loading, [key]: value }
