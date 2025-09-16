@@ -9,8 +9,6 @@ import { Plus, X } from 'lucide-react';
 import { Calendar as BigCalendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/pt-br';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import './calendar-styles.css';
 import type { AppointmentType, ClientType, BusinessHoursType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';

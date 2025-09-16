@@ -1,7 +1,82 @@
+/* ==========================================================================
+   1. IMPORTAÇÃO DAS BIBLIOTECAS DE ESTILO (DEVE VIR PRIMEIRO)
+   ========================================================================== */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+
+/* ==========================================================================
+   2. ESTILOS BASE DO TAILWIND
+   ========================================================================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+
+/* ==========================================================================
+   3. ESTILOS GLOBAIS DA APLICAÇÃO
+   ========================================================================== */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+
+/* ==========================================================================
+   4. PERSONALIZAÇÕES DO REACT BIG CALENDAR
+   ========================================================================== */
+
+/* --- SOLUÇÃO DEFINITIVA PARA CENTRALIZAÇÃO DOS HORÁRIOS --- */
+/*
+ * Alvo: O rótulo do horário (ex: "08:00") na coluna da esquerda.
+ * Ação: Move o texto para CIMA em 50% da sua própria altura.
+ * Resultado: O CENTRO do texto fica perfeitamente alinhado com a linha,
+ * criando um espaçamento visualmente idêntico acima e abaixo dela.
+*/
+.rbc-time-gutter .rbc-label {
+  transform: translateY(-50%) !important;
+  width: 100%;
+  text-align: center;
+  padding-right: 0.75rem; /* Adiciona um respiro à direita */
+  box-sizing: border-box;
+}
+
+/* --- ESTILOS VISUAIS DOS EVENTOS --- */
+
+/* Cor e aparência dos eventos no calendário */
+.rbc-event {
+  background: linear-gradient(to right, #ec4899, #8b5cf6) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 2px 5px !important;
+  font-weight: 500 !important;
+}
+
+/* Garante que o texto dentro do evento seja legível e quebre a linha */
+.rbc-event-label,
+.rbc-event-content {
+  font-size: 0.75rem;
+  white-space: normal !important;
+  max-height: 100%;
+}
+
+/* --- CORREÇÕES DE LAYOUT DOS EVENTOS --- */
+
+/* Corrige a largura do card do evento para ocupar 100% da coluna */
+.rbc-day-slot .rbc-event,
+.rbc-row-segment {
+  left: 0 !important;
+  width: 100% !important;
+}
+
+/* Força o contêiner de eventos a ocupar toda a largura da coluna, resolvendo o problema de encolhimento */
+.rbc-events-container {
+  width: 100% !important;
+  right: 0 !important;
+  left: 0 !important;
+  margin-right: 0 !important;
 }
