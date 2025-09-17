@@ -327,6 +327,8 @@ export default function Appointments() {
               }}
               min={minTime}
               max={maxTime}
+              step={60}
+              timeslots={1}
             />
           </div>
         </div>
