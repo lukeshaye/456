@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '../react-app/supabaseClient';
-import type { ClientType, ProductType, AppointmentType, FinancialEntryType, ProfessionalType } from './types';
+import type { 
+  ClientType, 
+  ProductType, 
+  AppointmentType, 
+  FinancialEntryType, 
+  ProfessionalType,
+  BusinessHoursType // Importado para consistência
+} from './types';
 
-// Definição da interface para os horários de funcionamento
-interface BusinessHours {
-  day_of_week: number;
-  start_time: string | null;
-  end_time: string | null;
-}
+// A interface local BusinessHours foi removida para usar a BusinessHoursType importada.
 
 // Definir a forma do nosso estado global
 interface AppState {
@@ -46,8 +48,8 @@ interface AppState {
   updateFinancialEntry: (entry: FinancialEntryType) => Promise<void>;
   deleteFinancialEntry: (entryId: number) => Promise<void>;
 
-  // NOVO: Estado para Configurações de Horário
-  businessHours: BusinessHours[];
+  // Estado para Configurações de Horário
+  businessHours: BusinessHoursType[];
   fetchBusinessHours: (userId: string) => Promise<void>;
 
   // Estados de loading
@@ -57,7 +59,7 @@ interface AppState {
     professionals: boolean;
     appointments: boolean;
     financialEntries: boolean;
-    settings: boolean; // Adicionado
+    businessHours: boolean; // Renomeado de settings para clareza
   };
   setLoading: (key: keyof AppState['loading'], value: boolean) => void;
 }
@@ -204,7 +206,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  // --- AGENDAMENTOS ---
+  // --- AGENDAMENTOS (Atualizado com end_date) ---
   appointments: [],
   fetchAppointments: async (userId) => {
     set(state => ({ loading: { ...state.loading, appointments: true } }));
@@ -221,6 +223,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ appointments: data || [], loading: { ...get().loading, appointments: false } });
   },
   addAppointment: async (appointment, userId) => {
+    // A lógica não muda, pois o objeto 'appointment' já contém 'end_date'
     const { data, error } = await supabase
       .from('appointments')
       .insert([{ ...appointment, user_id: userId }])
@@ -231,6 +234,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   updateAppointment: async (appointment) => {
+    // A lógica não muda, pois o objeto 'appointment' já contém 'end_date'
     const { data, error } = await supabase
       .from('appointments')
       .update(appointment)
@@ -301,7 +305,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // --- CONFIGURAÇÕES DE HORÁRIO ---
   businessHours: [],
   fetchBusinessHours: async (userId) => {
-    set(state => ({ loading: { ...state.loading, settings: true } }));
+    set(state => ({ loading: { ...state.loading, businessHours: true } }));
     const { data, error } = await supabase
       .from('business_settings')
       .select('day_of_week, start_time, end_time')
@@ -311,10 +315,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       
     if (error) {
       console.error("Erro ao buscar horários de funcionamento:", error);
-      set(state => ({ loading: { ...state.loading, settings: false } }));
+      set(state => ({ loading: { ...state.loading, businessHours: false } }));
       return;
     }
-    set({ businessHours: data || [], loading: { ...get().loading, settings: false } });
+    set({ businessHours: data || [], loading: { ...get().loading, businessHours: false } });
   },
 
   // --- ESTADOS DE LOADING ---
@@ -324,7 +328,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     professionals: false,
     appointments: false,
     financialEntries: false,
-    settings: false,
+    businessHours: false,
   },
   setLoading: (key, value) => set((state) => ({
     loading: { ...state.loading, [key]: value }

@@ -16,10 +16,8 @@ import { AppointmentFormSchema } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 
-// --- Configuração do Localizer ---
+// --- Configuração do Localizer (sem alterações) ---
 moment.locale('pt-br');
-
-// Força a atualização da localização para garantir a tradução correta
 moment.updateLocale('pt-br', {
   months: [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
@@ -47,16 +45,16 @@ moment.updateLocale('pt-br', {
     yy: "%d anos"
   }
 });
-
-
 const localizer = momentLocalizer(moment);
 
+// --- Tipos ---
 interface AppointmentFormData {
   client_id: number;
   service: string;
   price: number;
   professional: string;
   appointment_date: string;
+  end_date: string;
   attended?: boolean;
 }
 
@@ -65,6 +63,8 @@ const defaultFormValues: Partial<AppointmentFormData> = {
     service: '',
     price: undefined,
     professional: '',
+    appointment_date: '',
+    end_date: '',
     attended: false,
 };
 
@@ -76,6 +76,7 @@ interface CalendarEvent {
   resource: AppointmentType;
 }
 
+// --- Componente Principal ---
 export default function Appointments() {
   const { user } = useSupabaseAuth();
   const { showSuccess, showError } = useToastHelpers();
@@ -139,19 +140,12 @@ export default function Appointments() {
         maxTime: moment().startOf('day').add(20, 'hours').toDate(),
       };
     }
-
     let min = '23:59';
     let max = '00:00';
-
     businessHours.forEach((hour: BusinessHoursType) => {
-      if (hour.start_time && hour.start_time < min) {
-        min = hour.start_time;
-      }
-      if (hour.end_time && hour.end_time > max) {
-        max = hour.end_time;
-      }
+      if (hour.start_time && hour.start_time < min) min = hour.start_time;
+      if (hour.end_time && hour.end_time > max) max = hour.end_time;
     });
-
     return {
       minTime: moment().startOf('day').add(moment.duration(min)).toDate(),
       maxTime: moment().startOf('day').add(moment.duration(max)).toDate(),
@@ -224,29 +218,32 @@ export default function Appointments() {
 
   const handleSelectSlot = useCallback(({ start }: { start: Date }) => {
     const appointmentDateTime = moment(start).format('YYYY-MM-DDTHH:mm');
-    reset({ ...defaultFormValues, appointment_date: appointmentDateTime });
+    const endDateTime = moment(start).add(1, 'hour').format('YYYY-MM-DDTHH:mm');
+    reset({ ...defaultFormValues, appointment_date: appointmentDateTime, end_date: endDateTime });
     setEditingAppointment(null);
     setIsModalOpen(true);
   }, [reset]);
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
     setEditingAppointment(event.resource);
-    const appointmentDate = new Date(event.resource.appointment_date);
+    const startDate = new Date(event.resource.appointment_date);
+    const endDate = new Date(event.resource.end_date);
     
     reset({
       client_id: event.resource.client_id,
       service: event.resource.service,
       price: event.resource.price / 100,
       professional: event.resource.professional,
-      appointment_date: moment(appointmentDate).format('YYYY-MM-DDTHH:mm'),
+      appointment_date: moment(startDate).format('YYYY-MM-DDTHH:mm'),
+      end_date: moment(endDate).format('YYYY-MM-DDTHH:mm'),
       attended: event.resource.attended,
     });
     setIsModalOpen(true);
   }, [reset]);
   
-  const calendarEvents: CalendarEvent[] = appointments.map((appointment: AppointmentType) => {
+  const calendarEvents: CalendarEvent[] = useMemo(() => appointments.map((appointment: AppointmentType) => {
     const start = new Date(appointment.appointment_date);
-    const end = moment(start).add(1, 'hours').toDate();
+    const end = new Date(appointment.end_date); 
     
     return {
       id: appointment.id!,
@@ -255,7 +252,7 @@ export default function Appointments() {
       end,
       resource: appointment,
     };
-  });
+  }), [appointments]);
 
   if (loading.appointments || loading.clients || loading.professionals || loading.businessHours) {
     return <Layout><LoadingSpinner /></Layout>;
@@ -273,7 +270,10 @@ export default function Appointments() {
             <button
               type="button"
               onClick={() => {
-                  reset({...defaultFormValues, appointment_date: moment().format('YYYY-MM-DDTHH:mm')})
+                  const now = moment();
+                  const start = now.format('YYYY-MM-DDTHH:mm');
+                  const end = now.add(1, 'hour').format('YYYY-MM-DDTHH:mm');
+                  reset({...defaultFormValues, appointment_date: start, end_date: end})
                   setEditingAppointment(null);
                   setIsModalOpen(true)
               }}
@@ -388,10 +388,17 @@ export default function Appointments() {
                           {errors.professional && <p className="mt-1 text-sm text-red-600">{errors.professional.message}</p>}
                         </div>
                       </div>
-                      <div>
-                        <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">Data e Hora *</label>
-                        <input type="datetime-local" {...register('appointment_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
-                        {errors.appointment_date && <p className="mt-1 text-sm text-red-600">{errors.appointment_date.message}</p>}
+                      <div className="grid grid-cols-2 gap-4">
+                         <div>
+                          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">Início *</label>
+                          <input type="datetime-local" {...register('appointment_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                          {errors.appointment_date && <p className="mt-1 text-sm text-red-600">{errors.appointment_date.message}</p>}
+                        </div>
+                        <div>
+                          <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">Fim *</label>
+                          <input type="datetime-local" {...register('end_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                          {errors.end_date && <p className="mt-1 text-sm text-red-600">{errors.end_date.message}</p>}
+                        </div>
                       </div>
                     </div>
                   </div>
