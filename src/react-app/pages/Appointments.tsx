@@ -23,6 +23,7 @@ moment.updateLocale('pt-br', {
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
     "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
   ],
+  monthsShort: "Jan_Fev_Mar_Abr_Mai_Jun_Jul_Ago_Set_Out_Nov_Dez".split("_"),
   weekdays: [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
   ],
@@ -335,6 +336,8 @@ export default function Appointments() {
                 weekdayFormat: 'dddd',
                 monthHeaderFormat: 'MMMM [de] YYYY',
                 dayHeaderFormat: 'dddd, D [de] MMMM',
+                agendaHeaderFormat: (date, culture, local) => local.format(date, 'dddd, DD [de] MMMM', culture),
+                agendaDateFormat: 'ddd DD [de] MMM',
                 dayRangeHeaderFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('DD')} - ${moment(end).format('DD [de] MMMM [de] YYYY')}`,
                 agendaTimeFormat: 'HH:mm',
                 agendaTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
@@ -444,3 +447,4 @@ export default function Appointments() {
     </Layout>
   );
 }
+
