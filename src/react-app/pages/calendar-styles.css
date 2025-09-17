@@ -29,14 +29,15 @@
 
 /*
  * Alvo: O contêiner principal de todos os eventos dentro de uma coluna de dia/hora.
- * Ação: Força este contêiner a se esticar por toda a largura da coluna.
- * Isso resolve o problema de todos os elementos filhos estarem contidos em um espaço restrito.
+ * Ação: Força este contêiner a se esticar por toda a largura da coluna
+ * e torna seu fundo transparente para não cobrir a grade.
 */
 .rbc-events-container {
   width: 100% !important;
   right: 0 !important;
   left: 0 !important;
   margin-right: 0 !important;
+  background-color: transparent !important;
 }
 
 /* Garante que o texto dentro do evento seja legível e quebre a linha */
@@ -52,4 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* --- Oculta a linha de eventos de "dia inteiro" para um visual mais limpo --- */
+.rbc-allday-cell {
+  display: none !important;
 }
