@@ -1,65 +1,63 @@
 import { create } from 'zustand';
 import { supabase } from '../react-app/supabaseClient';
-import type { 
-  ClientType, 
-  ProductType, 
-  AppointmentType, 
-  FinancialEntryType, 
+import type {
+  ClientType,
+  ProductType,
+  AppointmentType,
+  FinancialEntryType,
   ProfessionalType,
-  BusinessHoursType // Importado para consistência
+  BusinessHoursType
 } from './types';
 
-// A interface local BusinessHours foi removida para usar a BusinessHoursType importada.
-
-// Definir a forma do nosso estado global
+// Interface que define a forma do nosso estado global
 interface AppState {
-  // Estado para Clientes
+  // Estado e ações para Clientes
   clients: ClientType[];
   fetchClients: (userId: string) => Promise<void>;
   addClient: (client: Omit<ClientType, 'id' | 'user_id'>, userId: string) => Promise<void>;
   updateClient: (client: ClientType) => Promise<void>;
   deleteClient: (clientId: number) => Promise<void>;
 
-  // Estado para Produtos
+  // Estado e ações para Produtos
   products: ProductType[];
   fetchProducts: (userId: string) => Promise<void>;
   addProduct: (product: Omit<ProductType, 'id' | 'user_id'>, userId: string) => Promise<void>;
   updateProduct: (product: ProductType) => Promise<void>;
   deleteProduct: (productId: number) => Promise<void>;
 
-  // Estado para Profissionais
+  // Estado e ações para Profissionais
   professionals: ProfessionalType[];
   fetchProfessionals: (userId: string) => Promise<void>;
   addProfessional: (professional: Omit<ProfessionalType, 'id' | 'user_id'>, userId: string) => Promise<void>;
   updateProfessional: (professional: ProfessionalType) => Promise<void>;
   deleteProfessional: (professionalId: number) => Promise<void>;
 
-  // Estado para Agendamentos
+  // Estado e ações para Agendamentos
   appointments: AppointmentType[];
-  fetchAppointments: (userId: string) => Promise<void>;
+  fetchAppointments: (userId: string, professionalId?: number | null) => Promise<void>;
   addAppointment: (appointment: Omit<AppointmentType, 'id' | 'user_id'>, userId: string) => Promise<void>;
   updateAppointment: (appointment: AppointmentType) => Promise<void>;
   deleteAppointment: (appointmentId: number) => Promise<void>;
 
-  // Estado para Entradas Financeiras
+  // Estado e ações para Entradas Financeiras
   financialEntries: FinancialEntryType[];
   fetchFinancialEntries: (userId: string) => Promise<void>;
   addFinancialEntry: (entry: Omit<FinancialEntryType, 'id' | 'user_id'>, userId: string) => Promise<void>;
   updateFinancialEntry: (entry: FinancialEntryType) => Promise<void>;
   deleteFinancialEntry: (entryId: number) => Promise<void>;
 
-  // Estado para Configurações de Horário
+  // Estado e ações para Horários de Funcionamento
   businessHours: BusinessHoursType[];
   fetchBusinessHours: (userId: string) => Promise<void>;
 
-  // Estados de loading
+  // Estados de loading para cada entidade
   loading: {
     clients: boolean;
     products: boolean;
     professionals: boolean;
     appointments: boolean;
     financialEntries: boolean;
-    businessHours: boolean; // Renomeado de settings para clareza
+    businessHours: boolean;
   };
   setLoading: (key: keyof AppState['loading'], value: boolean) => void;
 }
@@ -76,8 +74,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       .order('name', { ascending: true });
     if (error) {
       console.error("Erro ao buscar clientes:", error);
-      set(state => ({ loading: { ...state.loading, clients: false } }));
-      return;
     }
     set({ clients: data || [], loading: { ...get().loading, clients: false } });
   },
@@ -87,9 +83,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .insert([{ ...client, user_id: userId }])
       .select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({ clients: [...state.clients, data[0]] }));
-    }
+    if (data) set((state) => ({ clients: [...state.clients, data[0]].sort((a, b) => a.name.localeCompare(b.name)) }));
   },
   updateClient: async (client) => {
     const { data, error } = await supabase
@@ -98,18 +92,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       .eq('id', client.id)
       .select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({
-        clients: state.clients.map((c) => (c.id === client.id ? data[0] : c)),
-      }));
-    }
+    if (data) set((state) => ({ clients: state.clients.map((c) => (c.id === client.id ? data[0] : c)) }));
   },
   deleteClient: async (clientId) => {
     const { error } = await supabase.from('clients').delete().eq('id', clientId);
     if (error) throw error;
-    set((state) => ({
-      clients: state.clients.filter((c) => c.id !== clientId),
-    }));
+    set((state) => ({ clients: state.clients.filter((c) => c.id !== clientId) }));
   },
 
   // --- PRODUTOS ---
@@ -121,42 +109,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       .select('*')
       .eq('user_id', userId)
       .order('name', { ascending: true });
-    if (error) {
-      console.error("Erro ao buscar produtos:", error);
-      set(state => ({ loading: { ...state.loading, products: false } }));
-      return;
-    }
+    if (error) console.error("Erro ao buscar produtos:", error);
     set({ products: data || [], loading: { ...get().loading, products: false } });
   },
   addProduct: async (product, userId) => {
-    const { data, error } = await supabase
-      .from('products')
-      .insert([{ ...product, user_id: userId }])
-      .select();
+    const { data, error } = await supabase.from('products').insert([{ ...product, user_id: userId }]).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({ products: [...state.products, data[0]] }));
-    }
+    if (data) set((state) => ({ products: [...state.products, data[0]].sort((a, b) => a.name.localeCompare(b.name)) }));
   },
   updateProduct: async (product) => {
-    const { data, error } = await supabase
-      .from('products')
-      .update(product)
-      .eq('id', product.id)
-      .select();
+    const { data, error } = await supabase.from('products').update(product).eq('id', product.id).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({
-        products: state.products.map((p) => (p.id === product.id ? data[0] : p)),
-      }));
-    }
+    if (data) set((state) => ({ products: state.products.map((p) => (p.id === product.id ? data[0] : p)) }));
   },
   deleteProduct: async (productId) => {
     const { error } = await supabase.from('products').delete().eq('id', productId);
     if (error) throw error;
-    set((state) => ({
-      products: state.products.filter((p) => p.id !== productId),
-    }));
+    set((state) => ({ products: state.products.filter((p) => p.id !== productId) }));
   },
 
   // --- PROFISSIONAIS ---
@@ -168,91 +137,59 @@ export const useAppStore = create<AppState>((set, get) => ({
       .select('*')
       .eq('user_id', userId)
       .order('name', { ascending: true });
-    if (error) {
-      console.error("Erro ao buscar profissionais:", error);
-      set(state => ({ loading: { ...state.loading, professionals: false } }));
-      return;
-    }
+    if (error) console.error("Erro ao buscar profissionais:", error);
     set({ professionals: data || [], loading: { ...get().loading, professionals: false } });
   },
   addProfessional: async (professional, userId) => {
-    const { data, error } = await supabase
-      .from('professionals')
-      .insert([{ ...professional, user_id: userId }])
-      .select();
+    const { data, error } = await supabase.from('professionals').insert([{ ...professional, user_id: userId }]).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({ professionals: [...state.professionals, data[0]] }));
-    }
+    if (data) set((state) => ({ professionals: [...state.professionals, data[0]].sort((a, b) => a.name.localeCompare(b.name)) }));
   },
   updateProfessional: async (professional) => {
-    const { data, error } = await supabase
-      .from('professionals')
-      .update(professional)
-      .eq('id', professional.id)
-      .select();
+    const { data, error } = await supabase.from('professionals').update(professional).eq('id', professional.id).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({
-        professionals: state.professionals.map((p) => (p.id === professional.id ? data[0] : p)),
-      }));
-    }
+    if (data) set((state) => ({ professionals: state.professionals.map((p) => (p.id === professional.id ? data[0] : p)) }));
   },
   deleteProfessional: async (professionalId) => {
     const { error } = await supabase.from('professionals').delete().eq('id', professionalId);
     if (error) throw error;
-    set((state) => ({
-      professionals: state.professionals.filter((p) => p.id !== professionalId),
-    }));
+    set((state) => ({ professionals: state.professionals.filter((p) => p.id !== professionalId) }));
   },
 
-  // --- AGENDAMENTOS (Atualizado com end_date) ---
+  // --- AGENDAMENTOS (com filtro por profissional) ---
   appointments: [],
-  fetchAppointments: async (userId) => {
+  fetchAppointments: async (userId, professionalId = null) => {
     set(state => ({ loading: { ...state.loading, appointments: true } }));
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('appointments')
       .select('*')
-      .eq('user_id', userId)
-      .order('appointment_date', { ascending: true });
-    if (error) {
-      console.error("Erro ao buscar agendamentos:", error);
-      set(state => ({ loading: { ...state.loading, appointments: false } }));
-      return;
+      .eq('user_id', userId);
+
+    // Adiciona o filtro por profissional, se um ID for fornecido
+    if (professionalId) {
+      query = query.eq('professional_id', professionalId);
     }
+    
+    const { data, error } = await query.order('appointment_date', { ascending: true });
+
+    if (error) console.error("Erro ao buscar agendamentos:", error);
     set({ appointments: data || [], loading: { ...get().loading, appointments: false } });
   },
   addAppointment: async (appointment, userId) => {
-    // A lógica não muda, pois o objeto 'appointment' já contém 'end_date'
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert([{ ...appointment, user_id: userId }])
-      .select();
+    const { data, error } = await supabase.from('appointments').insert([{ ...appointment, user_id: userId }]).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({ appointments: [...state.appointments, data[0]] }));
-    }
+    if (data) set((state) => ({ appointments: [...state.appointments, data[0]] }));
   },
   updateAppointment: async (appointment) => {
-    // A lógica não muda, pois o objeto 'appointment' já contém 'end_date'
-    const { data, error } = await supabase
-      .from('appointments')
-      .update(appointment)
-      .eq('id', appointment.id)
-      .select();
+    const { data, error } = await supabase.from('appointments').update(appointment).eq('id', appointment.id).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({
-        appointments: state.appointments.map((a) => (a.id === appointment.id ? data[0] : a)),
-      }));
-    }
+    if (data) set((state) => ({ appointments: state.appointments.map((a) => (a.id === appointment.id ? data[0] : a)) }));
   },
   deleteAppointment: async (appointmentId) => {
     const { error } = await supabase.from('appointments').delete().eq('id', appointmentId);
     if (error) throw error;
-    set((state) => ({
-      appointments: state.appointments.filter((a) => a.id !== appointmentId),
-    }));
+    set((state) => ({ appointments: state.appointments.filter((a) => a.id !== appointmentId) }));
   },
 
   // --- ENTRADAS FINANCEIRAS ---
@@ -264,45 +201,26 @@ export const useAppStore = create<AppState>((set, get) => ({
       .select('*')
       .eq('user_id', userId)
       .order('entry_date', { ascending: false });
-    if (error) {
-      console.error("Erro ao buscar entradas financeiras:", error);
-      set(state => ({ loading: { ...state.loading, financialEntries: false } }));
-      return;
-    }
+    if (error) console.error("Erro ao buscar entradas financeiras:", error);
     set({ financialEntries: data || [], loading: { ...get().loading, financialEntries: false } });
   },
   addFinancialEntry: async (entry, userId) => {
-    const { data, error } = await supabase
-      .from('financial_entries')
-      .insert([{ ...entry, user_id: userId }])
-      .select();
+    const { data, error } = await supabase.from('financial_entries').insert([{ ...entry, user_id: userId }]).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({ financialEntries: [...state.financialEntries, data[0]] }));
-    }
+    if (data) set((state) => ({ financialEntries: [...state.financialEntries, data[0]] }));
   },
   updateFinancialEntry: async (entry) => {
-    const { data, error } = await supabase
-      .from('financial_entries')
-      .update(entry)
-      .eq('id', entry.id)
-      .select();
+    const { data, error } = await supabase.from('financial_entries').update(entry).eq('id', entry.id).select();
     if (error) throw error;
-    if (data) {
-      set((state) => ({
-        financialEntries: state.financialEntries.map((e) => (e.id === entry.id ? data[0] : e)),
-      }));
-    }
+    if (data) set((state) => ({ financialEntries: state.financialEntries.map((e) => (e.id === entry.id ? data[0] : e)) }));
   },
   deleteFinancialEntry: async (entryId) => {
     const { error } = await supabase.from('financial_entries').delete().eq('id', entryId);
     if (error) throw error;
-    set((state) => ({
-      financialEntries: state.financialEntries.filter((e) => e.id !== entryId),
-    }));
+    set((state) => ({ financialEntries: state.financialEntries.filter((e) => e.id !== entryId) }));
   },
 
-  // --- CONFIGURAÇÕES DE HORÁRIO ---
+  // --- HORÁRIOS DE FUNCIONAMENTO ---
   businessHours: [],
   fetchBusinessHours: async (userId) => {
     set(state => ({ loading: { ...state.loading, businessHours: true } }));
@@ -313,22 +231,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       .not('start_time', 'is', null)
       .not('end_time', 'is', null);
       
-    if (error) {
-      console.error("Erro ao buscar horários de funcionamento:", error);
-      set(state => ({ loading: { ...state.loading, businessHours: false } }));
-      return;
-    }
+    if (error) console.error("Erro ao buscar horários de funcionamento:", error);
     set({ businessHours: data || [], loading: { ...get().loading, businessHours: false } });
   },
 
   // --- ESTADOS DE LOADING ---
   loading: {
-    clients: false,
-    products: false,
-    professionals: false,
-    appointments: false,
-    financialEntries: false,
-    businessHours: false,
+    clients: true,
+    products: true,
+    professionals: true,
+    appointments: true,
+    financialEntries: true,
+    businessHours: true,
   },
   setLoading: (key, value) => set((state) => ({
     loading: { ...state.loading, [key]: value }
