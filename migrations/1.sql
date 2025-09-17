@@ -1,102 +1,101 @@
-
 -- Tabela de agendamentos
 CREATE TABLE appointments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   client_name TEXT NOT NULL,
   service TEXT NOT NULL,
   price INTEGER NOT NULL, -- preço em centavos
   professional TEXT NOT NULL,
-  appointment_date DATETIME NOT NULL,
-  is_confirmed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  appointment_date TIMESTAMP NOT NULL,
+  is_confirmed BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de lançamentos financeiros
 CREATE TABLE financial_entries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   description TEXT NOT NULL,
   amount INTEGER NOT NULL, -- valor em centavos
   type TEXT NOT NULL, -- 'receita' ou 'despesa'
   entry_type TEXT NOT NULL, -- 'pontual' ou 'fixa'
   entry_date DATE NOT NULL,
-  is_virtual BOOLEAN DEFAULT FALSE, -- se foi gerado automaticamente por agendamento
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  is_virtual BOOLEAN DEFAULT false, -- se foi gerado automaticamente por agendamento
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de produtos
 CREATE TABLE products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
   price INTEGER NOT NULL, -- preço em centavos
   image_url TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de profissionais
 CREATE TABLE professionals (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de horários dos profissionais
 CREATE TABLE professional_schedules (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   professional_id INTEGER NOT NULL,
   day_of_week INTEGER NOT NULL, -- 0=domingo, 1=segunda, etc
-  start_time TEXT, -- formato HH:MM
-  end_time TEXT, -- formato HH:MM
-  lunch_start_time TEXT, -- formato HH:MM
-  lunch_end_time TEXT, -- formato HH:MM
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  start_time TIME, -- formato HH:MM
+  end_time TIME, -- formato HH:MM
+  lunch_start_time TIME, -- formato HH:MM
+  lunch_end_time TIME, -- formato HH:MM
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de exceções e férias dos profissionais
 CREATE TABLE professional_exceptions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   professional_id INTEGER NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
-  start_time TEXT, -- formato HH:MM (null se dia inteiro)
-  end_time TEXT, -- formato HH:MM (null se dia inteiro)
+  start_time TIME, -- formato HH:MM (null se dia inteiro)
+  end_time TIME, -- formato HH:MM (null se dia inteiro)
   description TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de configurações gerais
 CREATE TABLE business_settings (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   day_of_week INTEGER NOT NULL, -- 0=domingo, 1=segunda, etc
-  start_time TEXT, -- formato HH:MM
-  end_time TEXT, -- formato HH:MM
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  start_time TIME, -- formato HH:MM
+  end_time TIME, -- formato HH:MM
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabela de exceções do estabelecimento
 CREATE TABLE business_exceptions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,
   exception_date DATE NOT NULL,
-  start_time TEXT, -- formato HH:MM (null se fechado)
-  end_time TEXT, -- formato HH:MM (null se fechado)
+  start_time TIME, -- formato HH:MM (null se fechado)
+  end_time TIME, -- formato HH:MM (null se fechado)
   description TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para melhor performance
@@ -111,4 +110,5 @@ CREATE INDEX idx_professional_schedules_professional_id ON professional_schedule
 CREATE INDEX idx_professional_exceptions_user_id ON professional_exceptions(user_id);
 CREATE INDEX idx_professional_exceptions_professional_id ON professional_exceptions(professional_id);
 CREATE INDEX idx_business_settings_user_id ON business_settings(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS business_settings_user_id_day_of_week_idx ON business_settings (user_id, day_of_week);
 CREATE INDEX idx_business_exceptions_user_id ON business_exceptions(user_id);

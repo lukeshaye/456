@@ -55,4 +55,3 @@ LEFT JOIN professionals p ON a.professional_id = p.id;
 -- COMENTÁRIOS DE DOCUMENTAÇÃO
 -- =====================================================
 COMMENT ON COLUMN appointments.end_date IS 'Armazena a data e hora de término do agendamento.';
-

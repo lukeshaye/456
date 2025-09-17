@@ -62,4 +62,3 @@ LEFT JOIN professionals p ON a.professional_id = p.id;
 -- COMENTÁRIOS DE DOCUMENTAÇÃO
 -- =====================================================
 COMMENT ON COLUMN appointments.attended IS 'Controla se o cliente compareceu ao agendamento (true) ou não (false).';
-
