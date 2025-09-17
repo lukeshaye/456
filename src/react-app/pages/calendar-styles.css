@@ -47,3 +47,34 @@
   white-space: normal !important;
   max-height: 100%;
 }
+
+/* --- CENTRALIZAÇÃO DEFINITIVA DO HORÁRIO NA CALHA LATERAL --- */
+
+/*
+ * Alvo: O grupo de slots de tempo (a 'caixinha' completa da hora).
+ * Ação: Remove a borda superior para evitar linhas duplas.
+*/
+.rbc-time-gutter .rbc-timeslot-group {
+  border-top: none;
+}
+
+/*
+ * Alvo: O slot de tempo individual.
+ * Ação: Transforma-o em um contêiner flex para centralizar o conteúdo.
+ * A altura de 200% faz com que o primeiro slot ocupe o espaço de dois.
+*/
+.rbc-time-slot {
+  display: flex !important;
+  align-items: center;    /* Centraliza verticalmente */
+  justify-content: center;/* Centraliza horizontalmente */
+  height: 200%;           /* Faz o slot ocupar o dobro da sua altura original */
+  border: none !important;
+}
+
+/*
+ * Alvo: O segundo slot de tempo de cada grupo (o de 30 minutos).
+ * Ação: Esconde completamente o slot que não tem rótulo.
+*/
+.rbc-timeslot-group .rbc-time-slot:last-child {
+  display: none !important;
+}
