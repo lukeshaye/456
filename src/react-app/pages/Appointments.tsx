@@ -441,7 +441,7 @@ export default function Appointments() {
                       </div>
                       <div>
                         <label htmlFor="price" className="block text-sm font-medium text-gray-700">Preço (R$) *</label>
-                        <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} placeholder="50,00" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm bg-gray-100" readOnly />
+                        <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} placeholder="50,00" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
                         {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -452,7 +452,7 @@ export default function Appointments() {
                         </div>
                         <div>
                           <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">Fim *</label>
-                          <input type="datetime-local" {...register('end_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm bg-gray-100" readOnly />
+                          <input type="datetime-local" {...register('end_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
                           {errors.end_date && <p className="mt-1 text-sm text-red-600">{errors.end_date.message}</p>}
                         </div>
                       </div>
