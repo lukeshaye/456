@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useSupabaseAuth } from '../auth/SupabaseAuthProvider'; // 1. Mudar para o nosso hook do Supabase
-import { supabase } from '../supabaseClient'; // 2. Importar o cliente Supabase para o logout
+import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
+import { supabase } from '../supabaseClient';
 import {
   LayoutDashboard,
   Calendar,
@@ -13,7 +13,7 @@ import {
   Menu,
   X,
   LogOut,
-  Scissors
+  Scissors // Ícone para Serviços
 } from 'lucide-react';
 
 // --- Definição de Tipos ---
@@ -21,12 +21,13 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-// --- Dados de Navegação (sem alteração) ---
+// --- Dados de Navegação (com "Serviços") ---
 const navigation = [
   { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Agendamentos', href: '/appointments', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },
   { name: 'Produtos', href: '/products', icon: Package },
+  { name: 'Serviços', href: '/services', icon: Scissors }, // <-- NOVO LINK
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Profissionais', href: '/professionals', icon: Briefcase },
   { name: 'Configurações', href: '/settings', icon: Settings },
@@ -34,31 +35,21 @@ const navigation = [
 
 /**
  * Componente principal do layout que envolve todas as páginas protegidas.
- * Inclui a barra lateral de navegação e a lógica de logout.
  */
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // 3. Obter o usuário do nosso contexto Supabase
   const { user } = useSupabaseAuth(); 
-  
   const navigate = useNavigate();
   const location = useLocation();
 
-  /**
-   * Função para terminar a sessão do usuário.
-   * Chama o método `signOut` do Supabase e redireciona para a página inicial.
-   */
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Erro ao fazer logout:", error.message);
     }
-    // Redireciona para a página inicial independentemente de ter ocorrido um erro ou não.
     navigate('/');
   };
   
-  // 4. Extrair dados do usuário do objeto do Supabase
   const userName = user?.user_metadata?.full_name || user?.email;
   const userAvatar = user?.user_metadata?.avatar_url;
 

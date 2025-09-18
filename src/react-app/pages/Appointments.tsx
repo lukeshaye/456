@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
@@ -11,7 +11,7 @@ import moment from 'moment';
 import 'moment/locale/pt-br';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
-import type { AppointmentType, ClientType, BusinessHoursType, ProfessionalType } from '../../shared/types';
+import type { AppointmentType, ClientType, BusinessHoursType, ProfessionalType, ServiceType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -36,7 +36,7 @@ const localizer = momentLocalizer(moment);
 interface AppointmentFormData {
   client_id: number;
   professional_id: number;
-  service: string;
+  service_id: number;
   price: number;
   appointment_date: string;
   end_date: string;
@@ -46,7 +46,7 @@ interface AppointmentFormData {
 const defaultFormValues: Partial<AppointmentFormData> = {
     client_id: undefined,
     professional_id: undefined,
-    service: '',
+    service_id: undefined,
     price: undefined,
     appointment_date: '',
     end_date: '',
@@ -70,11 +70,13 @@ export default function Appointments() {
     appointments, 
     clients, 
     professionals, 
+    services,
     businessHours,
     loading, 
     fetchAppointments, 
     fetchClients, 
     fetchProfessionals,
+    fetchServices,
     fetchBusinessHours,
     addAppointment,
     updateAppointment,
@@ -95,29 +97,45 @@ export default function Appointments() {
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AppointmentFormData>({
     resolver: zodResolver(AppointmentFormSchema) as any,
     defaultValues: defaultFormValues
   });
+  
+  const watchedServiceId = useWatch({ control, name: 'service_id' });
+  const watchedStartDate = useWatch({ control, name: 'appointment_date' });
 
   // --- Efeitos ---
-  // Busca inicial de dados que não dependem do filtro
   useEffect(() => {
     if (user) {
       fetchClients(user.id);
       fetchProfessionals(user.id);
+      fetchServices(user.id);
       fetchBusinessHours(user.id);
     }
-  }, [user, fetchClients, fetchProfessionals, fetchBusinessHours]);
+  }, [user, fetchClients, fetchProfessionals, fetchServices, fetchBusinessHours]);
 
-  // Busca agendamentos quando o usuário ou o profissional selecionado mudam
   useEffect(() => {
     if (user) {
-      // A store já foi atualizada para lidar com o filtro
       fetchAppointments(user.id); 
     }
   }, [user, fetchAppointments]);
+
+  useEffect(() => {
+    if (watchedServiceId && services.length > 0) {
+      const selectedService = services.find(s => s.id === Number(watchedServiceId));
+      if (selectedService) {
+        setValue('price', selectedService.price / 100);
+        if (watchedStartDate) {
+          const newEndDate = moment(watchedStartDate).add(selectedService.duration, 'minutes').format('YYYY-MM-DDTHH:mm');
+          setValue('end_date', newEndDate);
+        }
+      }
+    }
+  }, [watchedServiceId, watchedStartDate, services, setValue]);
 
   // --- Cálculos e Memos ---
   const { minTime, maxTime } = useMemo(() => {
@@ -150,29 +168,55 @@ export default function Appointments() {
     const start = new Date(appointment.appointment_date);
     const end = new Date(appointment.end_date); 
     const clientName = clients.find(c => c.id === appointment.client_id)?.name || appointment.client_name;
+    const serviceName = services.find(s => s.id === appointment.service_id)?.name || appointment.service;
     
     return {
       id: appointment.id!,
-      title: `${clientName} - ${appointment.service}`,
+      title: `${clientName} - ${serviceName}`,
       start,
       end,
       resource: appointment,
     };
-  }), [filteredAppointments, clients]);
+  }), [filteredAppointments, clients, services]);
 
   // --- Manipuladores de Eventos ---
   const onSubmit = async (data: AppointmentFormData) => {
     if (!user) return;
     
-    const client = clients.find((c: ClientType) => c.id === Number(data.client_id));
-    if (!client) {
-        showError("Cliente não encontrado.");
+    // Validação de Conflito de Horários
+    const newStart = moment(data.appointment_date);
+    const newEnd = moment(data.end_date);
+    const professionalId = Number(data.professional_id);
+
+    const conflictingAppointment = appointments.find(app => {
+        // Ignora o próprio agendamento ao editar
+        if (editingAppointment && app.id === editingAppointment.id) {
+            return false;
+        }
+        
+        // Verifica se é do mesmo profissional
+        if (app.professional_id !== professionalId) {
+            return false;
+        }
+
+        const existingStart = moment(app.appointment_date);
+        const existingEnd = moment(app.end_date);
+        
+        // Verifica sobreposição
+        return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart);
+    });
+
+    if (conflictingAppointment) {
+        showError("Conflito de Horário", "O profissional selecionado já tem um agendamento neste horário. Por favor, escolha outro horário ou profissional.");
         return;
     }
-
+    
+    const client = clients.find((c: ClientType) => c.id === Number(data.client_id));
     const professional = professionals.find((p: ProfessionalType) => p.id === Number(data.professional_id));
-    if (!professional) {
-        showError("Profissional não encontrado.");
+    const service = services.find((s: ServiceType) => s.id === Number(data.service_id));
+
+    if (!client || !professional || !service) {
+        showError("Dados inválidos.", "Cliente, profissional ou serviço não encontrado.");
         return;
     }
     
@@ -180,9 +224,11 @@ export default function Appointments() {
       ...data,
       price: Math.round(Number(data.price) * 100),
       client_id: Number(data.client_id),
-      professional_id: Number(data.professional_id),
+      professional_id: professionalId,
+      service_id: Number(data.service_id),
       client_name: client.name,
-      professional: professional.name, // CORRIGIDO: Adicionado nome do profissional
+      professional: professional.name,
+      service: service.name,
       attended: data.attended ?? false,
     };
 
@@ -246,7 +292,7 @@ export default function Appointments() {
     reset({
       client_id: event.resource.client_id,
       professional_id: event.resource.professional_id,
-      service: event.resource.service,
+      service_id: event.resource.service_id,
       price: event.resource.price / 100,
       appointment_date: moment(event.start).format('YYYY-MM-DDTHH:mm'),
       end_date: moment(event.end).format('YYYY-MM-DDTHH:mm'),
@@ -255,7 +301,7 @@ export default function Appointments() {
     setIsModalOpen(true);
   }, [reset]);
   
-  if (loading.clients || loading.professionals || loading.businessHours) {
+  if (loading.clients || loading.professionals || loading.services || loading.businessHours) {
     return <Layout><LoadingSpinner /></Layout>;
   }
 
@@ -284,14 +330,7 @@ export default function Appointments() {
              </div>
             <button
               type="button"
-              onClick={() => {
-                  const now = moment();
-                  const start = now.format('YYYY-MM-DDTHH:mm');
-                  const end = now.add(1, 'hour').format('YYYY-MM-DDTHH:mm');
-                  reset({...defaultFormValues, appointment_date: start, end_date: end, professional_id: selectedProfessionalId ?? undefined})
-                  setEditingAppointment(null);
-                  setIsModalOpen(true)
-              }}
+              onClick={() => handleSelectSlot({ start: new Date() })}
               className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-pink-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -336,12 +375,16 @@ export default function Appointments() {
                 weekdayFormat: 'dddd',
                 monthHeaderFormat: 'MMMM [de] YYYY',
                 dayHeaderFormat: 'dddd, D [de] MMMM',
-                agendaHeaderFormat: (date, culture, local) => local.format(date, 'dddd, DD [de] MMMM', culture),
+                agendaHeaderFormat: ({ start, end }, culture, local) => 
+                  local.format(start, 'dddd, DD [de] MMMM', culture),
                 agendaDateFormat: 'ddd DD [de] MMM',
-                dayRangeHeaderFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('DD')} - ${moment(end).format('DD [de] MMMM [de] YYYY')}`,
+                dayRangeHeaderFormat: ({ start, end }, culture, local) => 
+                  `${local.format(start, 'DD/MM', culture)} - ${local.format(end, 'DD/MM', culture)}`,
                 agendaTimeFormat: 'HH:mm',
-                agendaTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
-                eventTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
+                agendaTimeRangeFormat: ({ start, end }, culture, local) => 
+                  `${local.format(start, 'HH:mm', culture)} – ${local.format(end, 'HH:mm', culture)}`,
+                eventTimeRangeFormat: ({ start, end }, culture, local) => 
+                  `${local.format(start, 'HH:mm', culture)} - ${local.format(end, 'HH:mm', culture)}`,
               }}
               min={minTime}
               max={maxTime}
@@ -386,13 +429,19 @@ export default function Appointments() {
                         {errors.professional_id && <p className="mt-1 text-sm text-red-600">{errors.professional_id.message}</p>}
                       </div>
                       <div>
-                        <label htmlFor="service" className="block text-sm font-medium text-gray-700">Serviço *</label>
-                        <input type="text" {...register('service')} placeholder="Ex: Corte de Cabelo" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
-                        {errors.service && <p className="mt-1 text-sm text-red-600">{errors.service.message}</p>}
+                        <label htmlFor="service_id" className="block text-sm font-medium text-gray-700">Serviço *</label>
+                         <select
+                          {...register('service_id', { valueAsNumber: true })}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                        >
+                          <option value="">Selecione um serviço</option>
+                          {services.map((service) => (<option key={service.id} value={service.id}>{service.name}</option>))}
+                        </select>
+                        {errors.service_id && <p className="mt-1 text-sm text-red-600">{errors.service_id.message}</p>}
                       </div>
                       <div>
                         <label htmlFor="price" className="block text-sm font-medium text-gray-700">Preço (R$) *</label>
-                        <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} placeholder="50,00" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                        <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} placeholder="50,00" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm bg-gray-100" readOnly />
                         {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -403,7 +452,7 @@ export default function Appointments() {
                         </div>
                         <div>
                           <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">Fim *</label>
-                          <input type="datetime-local" {...register('end_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                          <input type="datetime-local" {...register('end_date')} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm bg-gray-100" readOnly />
                           {errors.end_date && <p className="mt-1 text-sm text-red-600">{errors.end_date.message}</p>}
                         </div>
                       </div>
@@ -447,4 +496,3 @@ export default function Appointments() {
     </Layout>
   );
 }
-
